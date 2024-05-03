@@ -1,0 +1,85 @@
+{{define "Index"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat</title>
+    <style>
+        #chat-box {
+            width: 300px;
+            height: 400px;
+            border: 1px solid #ccc;
+            overflow-y: scroll;
+            margin-bottom: 10px;
+        }
+        #message-input {
+            width: 100%;
+            padding: 5px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+        #send-button {
+            padding: 5px 10px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+<div id="connection-box">
+    <input type="text" id="username-input" placeholder="Digite seu nome...">
+    <button id="connect-button">Conectar</button>
+</div>
+<div id="chat-box"></div>
+<input type="text" id="message-input" placeholder="Digite sua mensagem...">
+<button id="send-button">Enviar</button>
+
+<script>
+    const connectionBox = document.getElementById('connection-box');
+    const chatBox = document.getElementById('chat-box');
+    const messageInput = document.getElementById('message-input');
+    const connectButton = document.getElementById('connect-button');
+    const sendButton = document.getElementById('send-button');
+    const usernameInput = document.getElementById('username-input');
+
+    connectButton.addEventListener('click', function() {
+        const username = usernameInput.value.trim();
+        if (username !== '') {
+            // Oculta o campo de conexão e mostra o campo de chat
+            connectionBox.style.display = 'none';
+            chatBox.style.display = 'block';
+            messageInput.style.display = 'block';
+            sendButton.style.display = 'block';
+
+            // Aqui você pode enviar o nome de usuário para o servidor WebSocket
+            // Exemplo: enviarNomeDeUsuario(username);
+        }
+    });
+
+    function sendMessage() {
+        const message = messageInput.value;
+        if (message.trim() !== '') {
+            const messageElement = document.createElement('div');
+            messageElement.textContent = message;
+            chatBox.appendChild(messageElement);
+            chatBox.scrollTop = chatBox.scrollHeight;
+            messageInput.value = '';
+        }
+    }
+
+    sendButton.addEventListener('click', sendMessage);
+    messageInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+</script>
+</body>
+</html>
+{{end}}
