@@ -38,6 +38,14 @@ func NewServer() *Server {
 	}
 }
 
+func (s *Server) addClient(client *Client) {
+	s.conns[client.conn] = true
+}
+
+func (s *Server) removeClient(client *Client) {
+	delete(s.conns, client.conn)
+}
+
 func (s *Server) handleWS(client *Client) {
 	fmt.Println("new incoming connection from client:", client.conn.RemoteAddr())
 
@@ -80,7 +88,25 @@ func (s *Server) readLoop(client *Client) {
 	}
 }
 
+func (s *Server) handleMessage(client *Client, message []byte) {
+	// Para este exemplo, vamos simplesmente retransmitir a mensagem para todos os clientes.
+	// Construir a mensagem de retransmissão
+	broadcastMsg := Message{
+		Date: time.Now().Format("2006-01-02 15:04:05"),
+		Name: client.name,
+		Data: string(message),
+	}
+
+	jsonMessage, err := json.Marshal(broadcastMsg)
+	if err != nil {
+		log.Println("Erro ao codificar a mensagem em JSON:", err)
+		return
+	}
+	s.broadcast(jsonMessage, client)
+}
+
 func handleWS(server *Server) http.HandlerFunc {
+	fmt.Println("Entramos no handleWS()")
 	return func(w http.ResponseWriter, r *http.Request) {
 		upgrader := websocket.Upgrader{
 			CheckOrigin: func(r *http.Request) bool {
@@ -97,11 +123,6 @@ func handleWS(server *Server) http.HandlerFunc {
 		}
 
 		defer ws.Close()
-
-		if err := ws.WriteMessage(websocket.TextMessage, []byte("Enter your name: ")); err != nil {
-			log.Println("Erro ao solicitar o nome do usuário:", err)
-			return
-		}
 
 		// Lê o nome do usuário
 		_, name, err := ws.ReadMessage()
@@ -120,6 +141,7 @@ func handleWS(server *Server) http.HandlerFunc {
 			log.Println("Erro ao enviar saudação:", err)
 			return
 		}
+		fmt.Println("Hello %s! Bem vindo ao chat.", client.name)
 
 		// Chama o manipulador real para lidar com a conexão WebSocket
 		server.handleWS(client)
@@ -134,9 +156,6 @@ func (s *Server) broadcast(message []byte, sender *Client) {
 					fmt.Println("Erro ao enviar mensagem:", err)
 				}
 			}
-			//if err := ws.WriteMessage(websocket.TextMessage, b); err != nil {
-			//	fmt.Println("write error:", err)
-			//}
 		}(client)
 	}
 }

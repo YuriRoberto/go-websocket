@@ -47,6 +47,28 @@
     const connectButton = document.getElementById('connect-button');
     const sendButton = document.getElementById('send-button');
     const usernameInput = document.getElementById('username-input');
+    const ws = new WebSocket('ws://localhost:3000/ws');
+
+    this.send = function (message, callback) {
+        this.waitForConnection(function () {
+            ws.send(message);
+            if (typeof callback !== 'undefined') {
+                callback();
+            }
+        }, 1000);
+    };
+
+    this.waitForConnection = function (callback, interval) {
+        if (ws.readyState === 1) {
+            callback();
+        } else {
+            var that = this;
+            // optional: implement backoff for interval here
+            setTimeout(function () {
+                that.waitForConnection(callback, interval);
+            }, interval);
+        }
+    };
 
     connectButton.addEventListener('click', function() {
         const username = usernameInput.value.trim();
@@ -57,10 +79,55 @@
             messageInput.style.display = 'block';
             sendButton.style.display = 'block';
 
-            // Aqui você pode enviar o nome de usuário para o servidor WebSocket
-            // Exemplo: enviarNomeDeUsuario(username);
+            const ws = new WebSocket('ws://localhost:3000/ws');
+            if (ws.readyState !== 1){
+                ws.onopen = function(event) {
+                    console.log('Conectado ao servidor WebSocket.');
+                    // Envie o nome de usuário para o servidor
+                    ws.send(username);
+                };
+            }
+
+            sendButton.addEventListener('click', function() {
+                const message = messageInput.value.trim();
+                console.log("entrou no evento sendButton")
+                if (message !== '') {
+                    console.log("message aqui---->", message)
+                    ws.send(message);
+                    messageInput.value = '';
+                }
+            });
+
+            ws.onmessage = function(event) {
+                const messageData = JSON.parse(event.data);
+                const { date, name, data } = messageData;
+                const formattedMessage = `[${date}] ${name}: ${data}`;
+
+                const messageElement = document.createElement('div');
+                messageElement.textContent = formattedMessage;
+                messageElement.classList.add('message');
+                chatBox.appendChild(messageElement);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            };
+            ws.onerror = function(error) {
+                console.error('Erro na conexão WebSocket:', error);
+            };
+            ws.onclose = function(event) {
+                console.log('Conexão WebSocket fechada.');
+            };
         }
     });
+    // sendButton.addEventListener('click', function() {
+    //     // const ws = new WebSocket('ws://localhost:3000/ws');
+    //     const message = messageInput.value.trim();
+    //     console.log("entrou no evento sendButton")
+    //     if (message !== '') {
+    //        send(message, function (){})
+    //         console.log("message aqui---->", message)
+    //         // ws.send(message);
+    //         messageInput.value = '';
+    //     }
+    // });
 
     function sendMessage() {
         const message = messageInput.value;
@@ -73,7 +140,6 @@
         }
     }
 
-    sendButton.addEventListener('click', sendMessage);
     messageInput.addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             sendMessage();
